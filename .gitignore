@@ -3,6 +3,13 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+.env
+.pytest_cache/
+pytest-cache-files-*/
+data/*
+!data/eval/
+!data/eval/**
+*.sqlite
 
 # Compiled binaries
 *.exe

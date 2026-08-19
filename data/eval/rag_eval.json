@@ -1,0 +1,20 @@
+[
+  {
+    "question": "What is dynamic programming?",
+    "expected_answer": "memoization overlapping subproblems optimal substructure",
+    "relevant_document": "Dynamic Programming",
+    "relevant_chunk": "memoization"
+  },
+  {
+    "question": "How does binary search tree work?",
+    "expected_answer": "log n search insert tree",
+    "relevant_document": "Binary Search Tree",
+    "relevant_chunk": "O(log n)"
+  },
+  {
+    "question": "Explain graph BFS traversal",
+    "expected_answer": "breadth first traversal queue",
+    "relevant_document": "Graph BFS",
+    "relevant_chunk": "breadth"
+  }
+]

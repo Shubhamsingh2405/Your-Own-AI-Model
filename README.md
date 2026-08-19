@@ -1,212 +1,69 @@
-# Your-OWN-AI — Vector Database in Python
+# Your-OWN-AI — AI/ML Vector Search & RAG Platform
 
-A **vector database** built from scratch in **Python**, with a web UI.  
-Implements **HNSW**, **KD-Tree**, and **Brute Force** search side-by-side, plus a **RAG pipeline** using local Ollama models.
+A **from-scratch vector database** and **RAG experimentation platform** in Python with a **Streamlit** UI.
 
-No C++ compiler or build step — just Python, Flask, and Ollama.
+Implements custom **HNSW**, **KD-Tree**, and **Brute Force** search, **Ollama embeddings**, **SQLite persistence**, **Recall@K evaluation**, and a transparent **RAG pipeline** — without FAISS, Pinecone, LangChain, or a separate frontend framework.
+
+---
+
+## Architecture
+
+```
+Streamlit UI (app.py)
+        │
+   services/engine.py   ← thin facade (@st.cache_resource)
+        │
+   ┌────┴────────────────────────────┐
+   │         backend/ (AI/ML core)    │
+   ├─ vector_db/  HNSW · KD-Tree · BF │
+   ├─ embeddings/ Ollama + cache       │
+   ├─ rag/        chunk · retrieve · generate │
+   ├─ retrieval/  BM25 · hybrid · rerank      │
+   ├─ storage/    SQLite                     │
+   └─ benchmarks/ recall · latency            │
+        │
+     Ollama (nomic-embed-text + llama3.2)
+```
+
+**One frontend:** Streamlit only. No Flask, no `index.html`, no REST layer required for the UI.
 
 ---
 
 ## Quick Start
 
 ```powershell
-git clone https://github.com/YOUR_USERNAME/Your-OWN-AI.git
-cd Your-OWN-AI
-
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 
-python main.py
+streamlit run app.py
 ```
 
-Open **http://localhost:8080** in your browser.
+Open **http://localhost:8501**
 
-For RAG features, install [Ollama](https://ollama.com) and run:
+### Ollama (documents + RAG)
 
 ```powershell
 ollama pull nomic-embed-text
 ollama pull llama3.2
 ```
 
----
-
-## What This Project Does
-
-| Feature | Description |
-|---|---|
-| **3 Search Algorithms** | HNSW, KD-Tree, Brute Force — compare speed in the UI |
-| **3 Distance Metrics** | Cosine, Euclidean, Manhattan |
-| **16D Demo Vectors** | 20 pre-loaded vectors (CS, Math, Food, Sports) |
-| **2D PCA Scatter Plot** | Live semantic-space visualization |
-| **Document Embedding** | Paste text → Ollama `nomic-embed-text` (768D) |
-| **RAG Pipeline** | Ask questions → HNSW retrieval → local LLM answer |
-| **REST API** | insert, delete, search, benchmark, hnsw-info |
+Copy `.env.example` → `.env` to customize settings.
 
 ---
 
-## Tech Stack
+## Streamlit Pages
 
-| Layer | Technology |
-|---|---|
-| Backend | Python 3.10+, Flask |
-| HTTP client (Ollama) | `requests` |
-| Vector indexes | Custom HNSW, KD-Tree, Brute Force (pure Python) |
-| Frontend | `index.html` (vanilla JS, canvas PCA plot) |
-| LLM / embeddings | Ollama (`nomic-embed-text`, `llama3.2`) |
-
----
-
-## How It Works
-
-```
-Your Text
-    │
-    ▼
-Ollama (nomic-embed-text)     → 768-dimensional embedding
-    │
-    ▼
-HNSW Index (Python)             → multilayer graph index
-    │
-    ▼
-Semantic Search               → nearest-neighbor retrieval
-    │
-    ▼
-Ollama (llama3.2)             → answer from retrieved chunks
-    │
-    ▼
-Answer
-```
-
----
-
-## Prerequisites
-
-1. **Python 3.10+** — [python.org/downloads](https://www.python.org/downloads/) (check “Add to PATH”)
-2. **Git** — [git-scm.com/download/win](https://git-scm.com/download/win)
-3. **Ollama** (optional, for documents & RAG) — [ollama.com](https://ollama.com)
-
-Verify Python:
-
-```powershell
-python --version
-pip --version
-```
-
----
-
-## Full Setup (Windows)
-
-### 1. Install Ollama models (for RAG)
-
-```powershell
-ollama pull nomic-embed-text
-ollama pull llama3.2
-ollama list
-```
-
-> 8GB RAM recommended. Models use ~3GB total.
-
-### 2. Clone and install dependencies
-
-```powershell
-git clone https://github.com/YOUR_USERNAME/Your-OWN-AI.git
-cd Your-OWN-AI
-
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
-
-### 3. Run the server
-
-**Terminal 1** — Ollama (if not already in system tray):
-
-```powershell
-ollama serve
-```
-
-**Terminal 2** — VectorDB:
-
-```powershell
-cd Your-OWN-AI
-.venv\Scripts\Activate.ps1
-python main.py
-```
-
-Expected output:
-
-```
-=== VectorDB Engine ===
-http://localhost:8080
-20 demo vectors | 16 dims | HNSW+KD-Tree+BruteForce
-Ollama: ONLINE
-  embed model: nomic-embed-text  gen model: llama3.2
-```
-
-Open **http://localhost:8080**.
-
----
-
-## Using the Application
-
-### Tab 1: Search (Demo Vectors)
-
-- Search: `binary tree`, `sushi`, `basketball`, `calculus`
-- Pick algorithm: **HNSW**, **KD-Tree**, or **Brute Force**
-- Pick metric: **Cosine**, **Euclidean**, or **Manhattan**
-- **⚡ SEARCH** — results + scatter plot highlights
-- **▶ COMPARE ALL ALGOS** — latency benchmark
-
-### Tab 2: Documents
-
-1. Enter a title and paste text
-2. **⚡ EMBED & INSERT** — chunks text (250 words, 30 overlap), embeds via Ollama
-3. Each chunk is indexed in HNSW
-
-### Tab 3: Ask AI (RAG)
-
-1. Insert documents in Tab 2 first
-2. Ask a question → **🤖 ASK AI**
-3. Pipeline: embed question → HNSW retrieve → llama3.2 generate
-
----
-
-## REST API
-
-Base URL: `http://localhost:8080`
-
-### Demo vectors
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/search?v=...&k=5&metric=cosine&algo=hnsw` | K-NN search |
-| `POST` | `/insert` | Insert vector (`metadata`, `category`, `embedding`) |
-| `DELETE` | `/delete/:id` | Delete by ID |
-| `GET` | `/items` | List all vectors |
-| `GET` | `/benchmark?v=...&k=5&metric=cosine` | Compare algorithms |
-| `GET` | `/hnsw-info` | HNSW graph stats |
-| `GET` | `/stats` | DB stats |
-
-### Documents & RAG
-
-| Method | Endpoint | Body | Description |
-|---|---|---|---|
-| `POST` | `/doc/insert` | `{"title":"...","text":"..."}` | Embed and store |
-| `GET` | `/doc/list` | — | List documents |
-| `DELETE` | `/doc/delete/:id` | — | Delete chunk |
-| `POST` | `/doc/ask` | `{"question":"...","k":3}` | RAG answer |
-| `GET` | `/status` | — | Ollama status |
-
-### Examples
-
-```powershell
-curl "http://localhost:8080/search?v=0.9,0.8,0.7,0.6,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1&k=3&metric=cosine&algo=hnsw"
-
-curl -X POST http://localhost:8080/doc/ask `
-  -H "Content-Type: application/json" `
-  -d '{"question":"What is dynamic programming?","k":3}'
-```
+| Page | Purpose |
+|------|---------|
+| **Vector Search** | Query 16D demo index — algorithm, metric, K, latency |
+| **HNSW Playground** | Graph stats, layers, degree, search latency |
+| **Benchmark** | Brute Force vs KD-Tree vs HNSW bar chart |
+| **Documents** | Paste/upload text → chunk → embed → SQLite |
+| **Semantic Search** | Natural-language → embedding → HNSW top-K |
+| **Ask AI** | Full RAG with sources and citations |
+| **Evaluation** | Recall@1/5/10 vs brute-force ground truth |
+| **System Status** | Ollama, SQLite, HNSW, vector counts |
 
 ---
 
@@ -214,52 +71,90 @@ curl -X POST http://localhost:8080/doc/ask `
 
 ```
 Your-OWN-AI/
-├── main.py           ← Backend: indexes, REST API, RAG
-├── requirements.txt  ← flask, requests
-├── index.html        ← Frontend UI
-└── README.md
-```
-
-### Architecture (`main.py`)
-
-```
-BruteForce     O(N·d)     Exact baseline
-KDTree         O(log N)   Exact, axis-aligned splits
-HNSW           O(log N)   Approximate graph search
-
-VectorDB       16D demo vectors (all 3 algorithms)
-DocumentDB     768D Ollama embeddings (HNSW + brute fallback)
-OllamaClient   /api/embeddings + /api/generate
+├── app.py                 # Streamlit entry point
+├── services/engine.py     # AIEngine facade
+├── ui/pages.py            # Page render functions
+├── backend/
+│   ├── vector_db/         # Custom HNSW, KD-Tree, Brute Force
+│   ├── embeddings/        # Ollama provider + cache
+│   ├── rag/               # Chunker, retriever, generator
+│   ├── retrieval/         # BM25, hybrid, reranker
+│   ├── storage/           # SQLite
+│   └── benchmarks/        # Recall, latency
+├── experiments/           # CLI benchmark scripts
+├── tests/
+├── data/eval/             # RAG eval dataset
+├── requirements.txt
+└── .env.example
 ```
 
 ---
 
-## Common Issues
+## Configuration
 
-| Problem | Fix |
-|---|---|
-| `Ollama: OFFLINE` | Run `ollama serve` |
-| Slow first embed | Model downloading — wait ~2 min |
-| `python: command not found` | Reinstall Python with “Add to PATH” |
-| Port 8080 in use | `netstat -ano \| findstr 8080` then `taskkill /PID <pid> /F` |
-| Slow LLM answers | Use `llama3.2:1b` instead (see below) |
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `OLLAMA_URL` | `http://127.0.0.1:11434` | Ollama server |
+| `EMBEDDING_MODEL` | `nomic-embed-text` | Embedding model |
+| `LLM_MODEL` | `llama3.2` | Generation model |
+| `HNSW_M` | 16 | Graph connectivity |
+| `HNSW_EF_SEARCH` | 50 | Search accuracy/speed |
+| `HYBRID_ALPHA` | 0.7 | Vector weight in hybrid search |
+| `SQLITE_PATH` | `data/vectordb.sqlite` | Persistence |
 
-### Faster LLM
+---
+
+## Experiments (CLI)
 
 ```powershell
-ollama pull llama3.2:1b
+python experiments/evaluate_recall.py --queries 20
+python experiments/benchmark_algorithms.py --sizes 100,500,1000
+python experiments/evaluate_rag.py --mode hybrid
 ```
 
-In `main.py`, set on `OllamaClient`:
+All metrics are computed at runtime — nothing is hardcoded.
 
-```python
-self.gen_model = "llama3.2:1b"
+---
+
+## Testing
+
+```powershell
+python -m pytest -q
 ```
 
-Restart with `python main.py`.
+Tests cover distance functions, BM25, hybrid fusion, HNSW recall, and engine loading. **Ollama is not required** for tests.
+
+---
+
+## Docker
+
+```powershell
+docker compose up --build
+```
+
+App: **http://localhost:8501**
+
+---
+
+## Interview Talking Points
+
+1. **Custom HNSW** — layer traversal, efSearch trade-off, graph stats
+2. **Brute force baseline** — ground truth for Recall@K
+3. **Embeddings** — Ollama + dimension lock + SQLite cache
+4. **RAG** — retrieve → cite → abstain when context is weak
+5. **SQLite + in-memory HNSW** — persist documents, fast search
+6. **Streamlit** — thin UI over importable Python core
+
+---
+
+## Limitations
+
+- HNSW is in-memory; rebuilds on document delete
+- Demo vectors use fixed 16D data (not Ollama)
+- Not designed for billion-scale production loads
 
 ---
 
 ## License
 
-MIT — use this however you want.
+MIT
